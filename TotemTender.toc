@@ -1,0 +1,11 @@
+## Interface: 11507
+## Title: Totem Tender
+## Notes: An idle totem sim.
+## Author: Taurbucks
+## Version: 0.1.0
+## SavedVariables: TotemTenderDB
+
+data.lua
+logic.lua
+ui.lua
+core.lua
