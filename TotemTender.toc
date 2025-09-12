@@ -1,11 +1,12 @@
 ## Interface: 11507
-## Title: Totem Tender
-## Notes: An idle totem sim.
-## Author: Taurbucks
+## Title: TotemTender
+## Author: Ken
 ## Version: 0.1.0
+## Notes: Shaman harmony mini-game
 ## SavedVariables: TotemTenderDB
 
 data.lua
-logic.lua
 ui.lua
+debug.lua
+logic.lua
 core.lua
