@@ -1,5 +1,3 @@
-print("TotemTender: loading core.lua")
-
 local ADDON, TotemTender = ...
 
 -- Explicit aliases to avoid undeclared globals
@@ -8,16 +6,15 @@ local ENVS = TotemTender.LEVELS
 
 TotemTender.Running = false
 TotemTender._ticker = TotemTender._ticker
-
 TotemTenderDB = TotemTenderDB or {}
 
 -- ----------------------------------------------
 -- Deep copy for tables (handles nested tables)
 -- ----------------------------------------------
-local function deepCopy(tbl)
-  if type(tbl) ~= "table" then return tbl end
+local function deepCopy(table)
+  if type(table) ~= "table" then return table end
   local out = {}
-  for k, v in pairs(tbl) do out[k] = deepCopy(v) end
+  for key, value in pairs(table) do out[key] = deepCopy(value) end
   return out
 end
 
@@ -26,19 +23,19 @@ end
 -- Build a default state
 -- ----------------------------------------------
 local function buildDefaultState(envIndex)
-  local idx = math.max(1, math.min(envIndex or 1, #ENVS))
-  local env = ENVS[idx]
+  local index = math.max(1, math.min(envIndex or 1, #ENVS))
+  local environment = ENVS[index]
   return {
-    envIndex     = idx,
-    baseEnv      = deepCopy(env),
-    env          = deepCopy(env.base),
-    envHealth    = CONST.START_ENV_HEALTH,
-    level        = CONST.START_LEVEL,
-    xp           = 0,
-    harmony      = CONST.START_HARMONY,
-    unlocked     = {},
+    envIndex = index,
+    baseEnv = deepCopy(environment),
+    env = deepCopy(environment.base),
+    envHealth = CONST.START_ENV_HEALTH,
+    level = CONST.START_LEVEL,
+    xp = 0,
+    harmony = CONST.START_HARMONY,
+    unlocked = {},
     activeTotems = {},
-    cooldowns    = {},
+    cooldowns = {},
   }
 end
 
@@ -131,12 +128,14 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
     TotemTenderDB.state = TotemTender.State
     print("|cff33ff99TotemTender:|r reset to defaults.")
     return
+    
   -- Clears/wipes SavedVariables to reset the entire game
   elseif msg == "wipe" or msg == "clear" then
     if type(wipe) == "function" then wipe(TotemTenderDB) else TotemTenderDB = {} end
     TotemTender.ResetLevel(1)
     print("|cff33ff99TotemTender:|r SavedVariables wiped.")
     return
+    
   -- Sets the Level, Harmony, and Environment Health for the current level
   elseif msg:match("^set%s") then
     local Level, Health, EnvHealth = msg:match("^set%s+(%d+)%s+(%d+)%s*(%d*)")
@@ -153,6 +152,8 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
         :format(totemState.level, totemState.harmony, EnvHealth ~= "" and ("Env Health=" .. totemState.envHealth) or ""))
     end
     return
+
+  -- Sets the level to a specific level
   elseif msg:match("^level%s+%d+") then
     local n = tonumber(msg:match("^level%s+(%d+)"))
     if n and n >= 1 and n <= #ENVS then
@@ -160,16 +161,16 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
       print("|cff33ff99TotemTender:|r set level to " .. n .. " (" .. (ENVS[n].name or "Unknown") .. ")")
     end
     return
+
+  -- Goes to the next level
   elseif msg == "next" then
     local S = TotemTender.State or {}
     local nextIndex = math.min((S.envIndex or 1) + 1, #ENVS)
     TotemTender.ResetLevel(nextIndex)
     print("|cff33ff99TotemTender:|r advanced to level " .. nextIndex)
     return
-  elseif msg == "art test" then
-    TotemTender.UI:SetSceneBackground("Interface\\DialogFrame\\UI-DialogBox-Background")
-    print("|cff33ff99TotemTender:|r test art applied")
-    return
+
+  -- Gets rid of all totems
   elseif msg == "unsummon all" then
     local S = TotemTender.State or {}
     for i = #(S.activeTotems or {}), 1, -1 do
@@ -178,8 +179,10 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
     end
     print("|cff33ff99TotemTender:|r all totems dismissed.")
     return
+
+  -- Opens the debug console
   elseif msg:match("^debug") then
-    -- Guard in case debug.lua didn't load yet
+    -- Abort in case debug.lua didn't load yet
     if not TotemTender.Debug then
       print("|cff33ff99TotemTender:|r Debug module not loaded. Make sure 'debug.lua' is in the .toc (before core.lua).")
       return
@@ -187,29 +190,46 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
 
     local sub = (msg:match("^debug%s+(.*)$") or ""):lower()
 
+    -- Toggles debug
     if sub == "" or sub == "toggle" then
       TotemTender.Debug:Toggle()
       print("|cff33ff99TotemTender:|r Debug toggled.")
+
+    -- Turns debug on
     elseif sub == "on" then
       TotemTender.Debug:Show()
       print("|cff33ff99TotemTender:|r Debug shown.")
+
+    -- Turns debug off
     elseif sub == "off" then
       TotemTender.Debug:Hide()
       print("|cff33ff99TotemTender:|r Debug hidden.")
+
+    -- Clears debug
     elseif sub == "clear" then
       TotemTender.Debug:Clear()
       print("|cff33ff99TotemTender:|r Debug cleared.")
+
+    -- Pauses debug
     elseif sub == "pause" then
       TotemTender.Debug.paused = true
       TotemTender.Debug:State("Paused logging")
+
+    -- Resumes debug
     elseif sub == "resume" then
       TotemTender.Debug.paused = false
       TotemTender.Debug:State("Resumed logging")
+
+    -- Handles all other commands
     else
+
+      -- Toggles events/tick/state debugging on
       local which, val = sub:match("^(events|tick|state)%s+(on|off)$")
       if which and val then
         TotemTender.Debug.filters[which] = (val == "on")
         TotemTender.Debug:State(("Filter '%s' %s"):format(which, val:upper()))
+      
+      -- Nothing else was passed or understood, print help
       else
         print("|cff33ff99TotemTender:|r debug commands:")
         print("  /totemtender debug on|off|toggle|clear|pause|resume")
@@ -219,7 +239,7 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
     return
   end
 
-  -- Default: toggle main UI
+  -- Toggle the addon window
   if not TotemTender.UI.root or not TotemTender.UI.root:IsShown() then
     TotemTender.UI:Show()
   else
@@ -228,13 +248,13 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
 end
 
 
--- ------------------------------
--- Event bootstrap
--- ------------------------------
-local f = CreateFrame("Frame")
-f:RegisterEvent("ADDON_LOADED")
-f:RegisterEvent("PLAYER_LOGIN")
-f:SetScript("OnEvent", function(_, event, arg1)
+-- -----------------------------------------------
+-- Register addon loaded and player login events
+-- -----------------------------------------------
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:SetScript("OnEvent", function(_, event, arg1)
   if event == "ADDON_LOADED" and arg1 == "TotemTender" then
     groupTotemsByElement()
     TotemTender.UI:Create()
@@ -247,10 +267,9 @@ f:SetScript("OnEvent", function(_, event, arg1)
 end)
 
 
--- ------------------------------
--- Public controls
--- ------------------------------
-
+-- ----------------------------------------------
+-- Start the game
+-- ----------------------------------------------
 function TotemTender.Start()
   
   if TotemTender.UI and TotemTender.UI.CloseTotemList then TotemTender.UI:CloseTotemList() end
@@ -272,6 +291,9 @@ function TotemTender.Start()
   end
 end
 
+-- ----------------------------------------------
+-- Pause the game
+-- ----------------------------------------------
 function TotemTender.Pause()
   if TotemTender.UI and TotemTender.UI.CloseTotemList then TotemTender.UI:CloseTotemList() end
   TotemTender.Running = false
@@ -285,9 +307,9 @@ function TotemTender.Pause()
   end
 end
 
--- ------------------------------
--- Reset the game
--- ------------------------------
+-- ----------------------------------------------
+-- Reset the current level
+-- ----------------------------------------------
 function TotemTender.Reset()
   if TotemTender.UI and TotemTender.UI.CloseTotemList then TotemTender.UI:CloseTotemList() end
 
@@ -317,41 +339,44 @@ end
 
 
 
--- ------------------------------
--- Dismisses totem, removes pointer
--- ------------------------------
+-- ----------------------------------------------
+-- Dismisses a totem
+-- ----------------------------------------------
 function TotemTender.DismissTotem(instance)
-  local S = TotemTender.State
-  if not (S and S.activeTotems) then return end
+  local totemState = TotemTender.State
+  
+  if not (totemState and totemState.activeTotems) then return end
 
   local removed = false
-  for i = #S.activeTotems, 1, -1 do
-    local inst = S.activeTotems[i]
+  
+  for i = #totemState.activeTotems, 1, -1 do
+    local inst = totemState.activeTotems[i]
     if inst == instance or (instance and inst.id == instance.id and inst.element == instance.element) then
-      -- UI remove first so the handle doesn't dangle
+      
+      -- Removed the widget first
       if TotemTender.UI and TotemTender.UI.RemoveTotemWidget then
         TotemTender.UI:RemoveTotemWidget(inst)
       end
 
-      table.remove(S.activeTotems, i)
+      -- Then remove the totem from active totems
+      table.remove(totemState.activeTotems, i)
 
-      -- start cooldown on that totem ID
-      if inst.id and TotemTender.CONST and TotemTender.CONST.TOTEM_COOLDOWN then
-        TotemTender._StartCooldown(inst.id, TotemTender.CONST.TOTEM_COOLDOWN)
-      end
-
-      -- tiny goodwill refund
-      S.harmony = math.min(9999, (S.harmony or 0) + math.ceil(inst.upkeep or 0))
+      -- start cooldown on that totem ID (MOVE THIS TO WHEN IT'S CREATED)
+      -- if inst.id and TotemTender.CONST and TotemTender.CONST.TOTEM_COOLDOWN then
+      --  TotemTender._StartCooldown(inst.id, TotemTender.CONST.TOTEM_COOLDOWN)
+      --end
+      
       removed = true
       break
     end
   end
 
-  -- Defensive: if we didn’t find it in state, still hide any stray widget
+  -- If the totem wasn't being tracked anyways, remove the widget just in case.
   if not removed and TotemTender.UI and TotemTender.UI.RemoveTotemWidget then
     TotemTender.UI:RemoveTotemWidget(instance)
   end
 
+  -- Refresh the UI
   if TotemTender.UI and TotemTender.UI.Refresh then
     TotemTender.UI:Refresh()
   end
@@ -359,11 +384,14 @@ end
 
 
 
--- Plays a totem summoning sound. 
+-- ----------------------------------------------
+-- The sound when we plop a totem on the ground
+-- ----------------------------------------------
 function TotemTender.PlayTotemSummonSound()
   local path = "Interface\\AddOns\\TotemTender\\resources\\TotemBirthGenericA.ogg"
   if PlaySoundFile then
     pcall(PlaySoundFile, path, "SFX")
   end
 end
+
 
