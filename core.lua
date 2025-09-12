@@ -3,18 +3,17 @@ print("TotemTender: loading core.lua")
 local ADDON, TotemTender = ...
 
 -- Explicit aliases to avoid undeclared globals
-local CONST              = TotemTender.CONST
-local ENVS               = TotemTender.LEVELS
+local CONST = TotemTender.CONST
+local ENVS = TotemTender.LEVELS
 
-TotemTender.Running      = false
-TotemTender._ticker      = TotemTender._ticker
-
+TotemTender.Running = false
+TotemTender._ticker = TotemTender._ticker
 
 TotemTenderDB = TotemTenderDB or {}
 
--- ------------------------------
+-- ----------------------------------------------
 -- Deep copy for tables (handles nested tables)
--- ------------------------------
+-- ----------------------------------------------
 local function deepCopy(tbl)
   if type(tbl) ~= "table" then return tbl end
   local out = {}
@@ -22,9 +21,10 @@ local function deepCopy(tbl)
   return out
 end
 
--- ------------------------------
--- Construct a brand-new default state for a given environment index
--- ------------------------------
+
+-- ----------------------------------------------
+-- Build a default state
+-- ----------------------------------------------
 local function buildDefaultState(envIndex)
   local idx = math.max(1, math.min(envIndex or 1, #ENVS))
   local env = ENVS[idx]
@@ -42,25 +42,23 @@ local function buildDefaultState(envIndex)
   }
 end
 
-
-
--- ------------------------------
--- Unlock all free totems at start.
--- ------------------------------
+-- ----------------------------------------------
+-- Unlocks all free totems by default
+-- ----------------------------------------------
 local function autoUnlockZeroCost()
-  local S = TotemTender.State
-  S.unlocked = S.unlocked or {}
-  for _, t in ipairs(TotemTender.TOTEMS or {}) do
-    if (t.unlock or 0) == 0 and (S.level or 1) >= (t.unlockLevel or 1) then
-      S.unlocked[t.id] = true
+  local totemState = TotemTender.State
+  totemState.unlocked = totemState.unlocked or {}
+  for _, totem in ipairs(TotemTender.TOTEMS or {}) do
+    if (totem.unlock or 0) == 0 and (totemState.level or 1) >= (totem.unlockLevel or 1) then
+      totemState.unlocked[totem.id] = true
     end
   end
 end
 
 
--- ------------------------------
--- Public: Reset current level to defaults
--- ------------------------------
+-- ----------------------------------------------
+-- Resets a level (NOT the entire game!)
+-- ----------------------------------------------
 function TotemTender.ResetLevel(levelId)
   TotemTender.State   = buildDefaultState(levelId)
   TotemTenderDB.state = deepCopy(TotemTender.State)
@@ -70,14 +68,14 @@ function TotemTender.ResetLevel(levelId)
   if TotemTender.State and TotemTender.State.baseEnv and TotemTender.State.baseEnv.art then
     TotemTender.UI:SetSceneBackground(TotemTender.State.baseEnv.art)
   end
+  
   TotemTender.UI:ApplySceneMood(TotemTender.State.envHealth)
   TotemTender.UI:Refresh()
-  
 end
 
--- ------------------------------
--- Load from SavedVariables or start fresh
--- ------------------------------
+-- ----------------------------------------------
+-- Load from SavedVariables, or create new game
+-- ----------------------------------------------
 local function loadOrInit()
   if TotemTenderDB.state and TotemTenderDB.state.baseEnv then
     TotemTender.State = TotemTenderDB.state
@@ -92,12 +90,11 @@ local function loadOrInit()
   end
 
   TotemTender.UI:ApplySceneMood(TotemTender.State.envHealth)
-
 end
 
--- ------------------------------
--- Start/Restart the ticker
--- ------------------------------
+-- ----------------------------------------------
+-- Start or restart the ticker
+-- ----------------------------------------------
 local function startTicker()
   if TotemTender._ticker then TotemTender._ticker:Cancel() end
   TotemTender._ticker = C_Timer.NewTicker(CONST.TICK_SECONDS, function()
@@ -109,9 +106,9 @@ local function startTicker()
 end
 
 
--- ------------------------------
--- Pre-group totems by element for fast lookups
--- ------------------------------
+-- ----------------------------------------------
+-- Group all totems by element
+-- ----------------------------------------------
 local function groupTotemsByElement()
   TotemTender.TOTEMS_BY_ELEM = { earth = {}, air = {}, fire = {}, water = {} }
   for _, totem in ipairs(TotemTender.TOTEMS or {}) do
@@ -119,41 +116,41 @@ local function groupTotemsByElement()
   end
 end
 
--- ------------------------------
--- Slash commands: /totem or /totemtender
--- ------------------------------
--- ------------------------------
--- Slash commands: /totem or /totemtender
--- ------------------------------
+-- ----------------------------------------------
+-- Slash commands for the WoW console
+-- ----------------------------------------------
 SLASH_TOTEMTENDER1 = "/totem"
 SLASH_TOTEMTENDER2 = "/totemtender"
-
 SlashCmdList["TOTEMTENDER"] = function(msg)
+  -- match pattern to get any messages passed
   msg = (msg or ""):lower():gsub("^%s+", "")
 
+  -- Resets the current level
   if msg == "reset" then
     TotemTender.ResetLevel(1)
     TotemTenderDB.state = TotemTender.State
     print("|cff33ff99TotemTender:|r reset to defaults.")
     return
+  -- Clears/wipes SavedVariables to reset the entire game
   elseif msg == "wipe" or msg == "clear" then
     if type(wipe) == "function" then wipe(TotemTenderDB) else TotemTenderDB = {} end
     TotemTender.ResetLevel(1)
     print("|cff33ff99TotemTender:|r SavedVariables wiped.")
     return
+  -- Sets the Level, Harmony, and Environment Health for the current level
   elseif msg:match("^set%s") then
-    local L, H, EH = msg:match("^set%s+(%d+)%s+(%d+)%s*(%d*)")
-    if L and H then
-      local S   = TotemTender.State
-      S.level   = tonumber(L)
-      S.harmony = tonumber(H)
-      if EH ~= "" then S.envHealth = tonumber(EH) end
+    local Level, Health, EnvHealth = msg:match("^set%s+(%d+)%s+(%d+)%s*(%d*)")
+    if Level and Health then
+      local totemState   = TotemTender.State
+      totemState.level   = tonumber(Level)
+      totemState.harmony = tonumber(Health)
+      if EnvHealth ~= "" then totemState.envHealth = tonumber(EnvHealth) end
       
       autoUnlockZeroCost()
       TotemTender.UI:Refresh()
 
       print(("|cff33ff99TotemTender:|r set Level=%d Harmony=%d%s")
-        :format(S.level, S.harmony, EH ~= "" and (" Health=" .. S.envHealth) or ""))
+        :format(totemState.level, totemState.harmony, EnvHealth ~= "" and ("Env Health=" .. totemState.envHealth) or ""))
     end
     return
   elseif msg:match("^level%s+%d+") then
@@ -369,3 +366,4 @@ function TotemTender.PlayTotemSummonSound()
     pcall(PlaySoundFile, path, "SFX")
   end
 end
+
