@@ -12,9 +12,9 @@ TotemTender._ticker      = TotemTender._ticker
 
 TotemTenderDB = TotemTenderDB or {}
 
--- ------------------------------
--- Deep copy for tables (handles nested tables)
--- ------------------------------
+-- ----------------------------------------------------------------------
+-- Deeeeeep copy for tables (handles nested tables)
+-- ----------------------------------------------------------------------
 local function deepCopy(tbl)
   if type(tbl) ~= "table" then return tbl end
   local out = {}
@@ -22,9 +22,9 @@ local function deepCopy(tbl)
   return out
 end
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Construct a brand-new default state for a given environment index
--- ------------------------------
+-- ----------------------------------------------------------------------
 local function buildDefaultState(envIndex)
   local idx = math.max(1, math.min(envIndex or 1, #ENVS))
   local env = ENVS[idx]
@@ -44,9 +44,9 @@ end
 
 
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Unlock all free totems at start.
--- ------------------------------
+-- ----------------------------------------------------------------------
 local function autoUnlockZeroCost()
   local S = TotemTender.State
   S.unlocked = S.unlocked or {}
@@ -58,9 +58,9 @@ local function autoUnlockZeroCost()
 end
 
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Public: Reset current level to defaults
--- ------------------------------
+-- ----------------------------------------------------------------------
 function TotemTender.ResetLevel(levelId)
   TotemTender.State   = buildDefaultState(levelId)
   TotemTenderDB.state = deepCopy(TotemTender.State)
@@ -75,9 +75,9 @@ function TotemTender.ResetLevel(levelId)
   
 end
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Load from SavedVariables or start fresh
--- ------------------------------
+-- ----------------------------------------------------------------------
 local function loadOrInit()
   if TotemTenderDB.state and TotemTenderDB.state.baseEnv then
     TotemTender.State = TotemTenderDB.state
@@ -95,9 +95,9 @@ local function loadOrInit()
 
 end
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Start/Restart the ticker
--- ------------------------------
+-- ----------------------------------------------------------------------
 local function startTicker()
   if TotemTender._ticker then TotemTender._ticker:Cancel() end
   TotemTender._ticker = C_Timer.NewTicker(CONST.TICK_SECONDS, function()
@@ -109,9 +109,9 @@ local function startTicker()
 end
 
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Pre-group totems by element for fast lookups
--- ------------------------------
+-- ----------------------------------------------------------------------
 local function groupTotemsByElement()
   TotemTender.TOTEMS_BY_ELEM = { earth = {}, air = {}, fire = {}, water = {} }
   for _, totem in ipairs(TotemTender.TOTEMS or {}) do
@@ -119,12 +119,9 @@ local function groupTotemsByElement()
   end
 end
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Slash commands: /totem or /totemtender
--- ------------------------------
--- ------------------------------
--- Slash commands: /totem or /totemtender
--- ------------------------------
+-- ----------------------------------------------------------------------
 SLASH_TOTEMTENDER1 = "/totem"
 SLASH_TOTEMTENDER2 = "/totemtender"
 
@@ -231,9 +228,9 @@ SlashCmdList["TOTEMTENDER"] = function(msg)
 end
 
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Event bootstrap
--- ------------------------------
+-- ----------------------------------------------------------------------
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("PLAYER_LOGIN")
@@ -250,10 +247,9 @@ f:SetScript("OnEvent", function(_, event, arg1)
 end)
 
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Public controls
--- ------------------------------
-
+-- ----------------------------------------------------------------------
 function TotemTender.Start()
   
   if TotemTender.UI and TotemTender.UI.CloseTotemList then TotemTender.UI:CloseTotemList() end
@@ -288,9 +284,9 @@ function TotemTender.Pause()
   end
 end
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Reset the game
--- ------------------------------
+-- ----------------------------------------------------------------------
 function TotemTender.Reset()
   if TotemTender.UI and TotemTender.UI.CloseTotemList then TotemTender.UI:CloseTotemList() end
 
@@ -320,9 +316,9 @@ end
 
 
 
--- ------------------------------
+-- ----------------------------------------------------------------------
 -- Dismisses totem, removes pointer
--- ------------------------------
+-- ----------------------------------------------------------------------
 function TotemTender.DismissTotem(instance)
   local S = TotemTender.State
   if not (S and S.activeTotems) then return end
@@ -350,7 +346,7 @@ function TotemTender.DismissTotem(instance)
     end
   end
 
-  -- Defensive: if we didn’t find it in state, still hide any stray widget
+  -- if we didn’t find it in state, still hide any stray widget
   if not removed and TotemTender.UI and TotemTender.UI.RemoveTotemWidget then
     TotemTender.UI:RemoveTotemWidget(instance)
   end
