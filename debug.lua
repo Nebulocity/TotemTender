@@ -1,6 +1,3 @@
--- debug.lua — TotemTender Debug Console (Classic-safe, hardened)
--- Movable/resizable log window; guarded UI creation so slash commands never "hang".
-
 print("TotemTender: loading debug.lua")
 
 -- Get the addon table WoW passes via ...
@@ -11,14 +8,14 @@ _G.TotemTender          = TotemTender -- ensure global points to the same table
 TotemTender.Debug       = TotemTender.Debug or {}
 local Debug             = TotemTender.Debug
 
--- ============================================================================
+-- ----------------------------------------------------------------------
 -- Settings / State
--- ============================================================================
+-- ----------------------------------------------------------------------
 Debug.enabled           = Debug.enabled or false
 Debug.paused            = Debug.paused or false
 Debug.filters           = Debug.filters or {
   event = true,  -- ambient events / world nudges
-  tick  = false, -- per-tick diagnostics (can be noisy)
+  tick  = false, -- per-tick diagnostics (might be really busy)
   state = true,  -- state changes (summon/dismiss, toggles)
   ui    = true,  -- UI notes
   err   = true,  -- errors/warnings
@@ -32,9 +29,9 @@ local COLOR             = {
   err   = { 1.00, 0.30, 0.30 },
 }
 
--- ============================================================================
+-- ----------------------------------------------------------------------
 -- Helpers
--- ============================================================================
+-- ----------------------------------------------------------------------
 local function safe(func, ...)
   -- Run a function in pcall; print a red error to chat if it fails.
   local ok, r1, r2, r3 = pcall(func, ...)
@@ -51,9 +48,9 @@ end
 
 function Debug:Info(text) self:Add("state", text) end
 
--- ============================================================================
--- UI (lazy-built; Classic-safe)
--- ============================================================================
+-- ----------------------------------------------------------------------
+-- UI 
+-- ----------------------------------------------------------------------
 function Debug:EnsureUI()
   if self.frame then return end
 
@@ -136,7 +133,7 @@ function Debug:EnsureUI()
     Debug:Info(Debug.paused and "Paused logging" or "Resumed logging")
   end)
 
-  -- Filter checkboxes — classic-safe (own label FS; template text not relied upon)
+  -- Filter checkboxes
   local function MakeCheck(label, x, key, color)
     local okCB, cb = safe(CreateFrame, "CheckButton", nil, f, "UICheckButtonTemplate")
     if not okCB then return end
@@ -205,9 +202,9 @@ function Debug:Clear()
   if self.msg then self.msg:Clear() end
 end
 
--- ============================================================================
--- Logging API
--- ============================================================================
+-- ----------------------------------------------------------------------
+-- Logging 
+-- ----------------------------------------------------------------------
 function Debug:Add(cat, text, r, g, b)
   if not self.enabled or self.paused then return end
   if self.filters[cat] == false then return end
